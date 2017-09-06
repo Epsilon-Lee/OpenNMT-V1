@@ -1,6 +1,6 @@
 # OpenNMT: Open-Source Neural Machine Translation
 
-This is a [Pytorch](https://github.com/pytorch/pytorch) port of [OpenNMT](https://github.com/OpenNMT/OpenNMT), an open-source (MIT) neural machine translation system.
+This is my personalized dev. prototype for NMT research. Great thanks to this [Pytorch](https://github.com/pytorch/pytorch) port of [OpenNMT](https://github.com/OpenNMT/OpenNMT), an open-source (MIT) neural machine translation system.
 
 <center style="padding: 40px"><img width="70%" src="http://opennmt.github.io/simple-attn.png" /></center>
 
@@ -34,7 +34,7 @@ python preprocess.py -train_src IWSLT/train.de.tok -train_tgt IWSLT/train.en.tok
 
 ```bash
 # de2en
-python train.py -data IWSLT/de2en.30k.train.pt -save_model iwslt_models/de2en_30k -gpus 0
+python train.py -data IWSLT/de2en.30k.train.pt -save_model ../Models/V1_IWSLT_Models/de2en_30k -gpus 0
 ```
 
 ### 3) Translate sentences.
