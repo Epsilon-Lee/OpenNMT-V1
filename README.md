@@ -34,7 +34,7 @@ python preprocess.py -train_src IWSLT/train.de.tok -train_tgt IWSLT/train.en.tok
 
 ```bash
 # de2en
-python train.py -data IWSLT/de2en.30k.train.pt -save_model ../Models/V1_IWSLT_Models/de2en_30k -gpus 0
+python train.py -data IWSLT/de2en.30k.train.pt -save_model ../Models/V1_IWSLT_Models/de2en_30k_bz32 -gpus 0 -batch_size 32
 ```
 
 ### 3) Translate sentences.
