@@ -48,7 +48,7 @@ parser.add_argument('-brnn_merge', default='concat',
 
 ## Optimization options
 
-parser.add_argument('-batch_size', type=int, default=64,
+parser.add_argument('-batch_size', type=int, default=32,
                     help='Maximum batch size')
 parser.add_argument('-max_generator_batches', type=int, default=32,
                     help="""Maximum batches of words in a sequence to run
