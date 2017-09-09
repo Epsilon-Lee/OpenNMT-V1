@@ -47,6 +47,8 @@ class StackedLSTM(nn.Module):
         self.num_layers = num_layers
         self.layers = nn.ModuleList()
 
+        # To create a multi-layer Stack LSTM by the underlying
+        # building blocks `LSTMCell`
         for i in range(num_layers):
             self.layers.append(nn.LSTMCell(input_size, rnn_size))
             input_size = rnn_size

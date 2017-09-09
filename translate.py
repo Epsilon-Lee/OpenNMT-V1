@@ -4,46 +4,15 @@ import onmt
 import torch
 import argparse
 import math
+import opts
+import sys
 
 import time
 
 parser = argparse.ArgumentParser(description='translate.py')
+opts.translate_opts(parser)
 
-parser.add_argument('-model', required=True,
-                    help='Path to model .pt file')
-parser.add_argument('-src',   required=True,
-                    help='Source sequence to decode (one line per sequence)')
-parser.add_argument('-tgt',
-                    help='True target sequence (optional)')
-parser.add_argument('-output', default='pred.txt',
-                    help="""Path to output the predictions (each line will
-                    be the decoded sequence""")
-parser.add_argument('-beam_size',  type=int, default=5,
-                    help='Beam size')
-parser.add_argument('-batch_size', type=int, default=30,
-                    help='Batch size')
-parser.add_argument('-max_sent_length', type=int, default=100,
-                    help='Maximum sentence length.')
-parser.add_argument('-replace_unk', action="store_true",
-                    help="""Replace the generated UNK tokens with the source
-                    token that had the highest attention weight. If phrase_table
-                    is provided, it will lookup the identified source token and
-                    give the corresponding target token. If it is not provided
-                    (or the identified source token does not exist in the
-                    table) then it will copy the source token""")
-# parser.add_argument('-phrase_table',
-#                     help="""Path to source-target dictionary to replace UNK
-#                     tokens. See README.md for the format of this file.""")
-parser.add_argument('-verbose', action="store_true",
-                    help='Print scores and predictions for each sentence')
-parser.add_argument('-n_best', type=int, default=1,
-                    help="""If verbose is set, will output the n_best
-                    decoded sentences""")
-
-parser.add_argument('-gpu', type=int, default=-1,
-                    help="Device to run on")
-
-
+opt = parser.parse_args()
 
 def reportScore(name, scoreTotal, wordsTotal):
     print("%s AVG SCORE: %.4f, %s PPL: %.4f" % (
@@ -64,7 +33,7 @@ def main():
     if opt.cuda:
         torch.cuda.set_device(opt.gpu)
 
-    translator = onmt.Translator(opt)
+    translator = onmt.Translator(opt, None, None, None)
 
     outF = open(opt.output, 'w')
 
@@ -84,14 +53,17 @@ def main():
                 tgtTokens = tgtF.readline().split() if tgtF else None
                 tgtBatch += [tgtTokens]
 
-            if len(srcBatch) < opt.batch_size:
+            # read batch_size source sentences to construct a batch
+            if len(srcBatch) < opt.trans_batch_size:
                 continue
         else:
             # at the end of file, check last batch
             if len(srcBatch) == 0:
                 break
-
+        start_time = time.time()
         predBatch, predScore, goldScore = translator.translate(srcBatch, tgtBatch)
+        print 'time cost:', time.time() - start_time
+        sys.stdin.readline()
  
         predScoreTotal += sum(score[0] for score in predScore)
         predWordsTotal += sum(len(x[0]) for x in predBatch)

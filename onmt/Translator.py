@@ -5,35 +5,43 @@ from torch.autograd import Variable
 
 
 class Translator(object):
-    def __init__(self, opt):
-        self.opt = opt
-        self.tt = torch.cuda if opt.cuda else torch
+    def __init__(self, opt, model, srcDict, tgtDict):
+        if model == None:
+            assert opt is not None
+            self.opt = opt
+            self.tt = torch.cuda if opt.cuda else torch
 
-        checkpoint = torch.load(opt.model)
+            checkpoint = torch.load(opt.model)
 
-        model_opt = checkpoint['opt']
-        self.src_dict = checkpoint['dicts']['src']
-        self.tgt_dict = checkpoint['dicts']['tgt']
+            model_opt = checkpoint['opt']
+            self.src_dict = checkpoint['dicts']['src']
+            self.tgt_dict = checkpoint['dicts']['tgt']
 
-        encoder = onmt.Models.Encoder(model_opt, self.src_dict)
-        decoder = onmt.Models.Decoder(model_opt, self.tgt_dict)
-        model = onmt.Models.NMTModel(encoder, decoder)
+            encoder = onmt.Models.Encoder(model_opt, self.src_dict)
+            decoder = onmt.Models.Decoder(model_opt, self.tgt_dict)
+            model = onmt.Models.NMTModel(encoder, decoder)
 
-        generator = nn.Sequential(
-            nn.Linear(model_opt.rnn_size, self.tgt_dict.size()),
-            nn.LogSoftmax())
+            generator = nn.Sequential(
+                nn.Linear(model_opt.rnn_size, self.tgt_dict.size()),
+                nn.LogSoftmax())
 
-        model.load_state_dict(checkpoint['model'])
-        generator.load_state_dict(checkpoint['generator'])
+            model.load_state_dict(checkpoint['model'])
+            generator.load_state_dict(checkpoint['generator'])
 
-        if opt.cuda:
-            model.cuda()
-            generator.cuda()
+            if opt.cuda:
+                model.cuda()
+                generator.cuda()
+            else:
+                model.cpu()
+                generator.cpu()
+
+            model.generator = generator
         else:
-            model.cpu()
-            generator.cpu()
-
-        model.generator = generator
+            assert srcDict is not None and tgtDict is not None and opt is not None
+            self.src_dict = srcDict
+            self.tgt_dict = tgtDict
+            self.opt = opt
+            self.tt = torch.cuda if opt.cuda else torch
 
         self.model = model
         self.model.eval()
@@ -48,9 +56,10 @@ class Translator(object):
                        onmt.Constants.UNK_WORD,
                        onmt.Constants.BOS_WORD,
                        onmt.Constants.EOS_WORD) for b in goldBatch]
-
+        # Logging
+        # print 'in buildData, self.opt.cuda', self.opt.cuda
         return onmt.Dataset(srcData, tgtData,
-            self.opt.batch_size, self.opt.cuda, volatile=True)
+            self.opt.trans_batch_size, self.opt.cuda, volatile=True)
 
     def buildTargetTokens(self, pred, src, attn):
         tokens = self.tgt_dict.convertToLabels(pred, onmt.Constants.EOS)

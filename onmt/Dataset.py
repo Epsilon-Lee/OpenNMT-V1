@@ -19,7 +19,6 @@ class Dataset(object):
         else:
             self.tgt = None
         self.cuda = cuda
-
         self.batchSize = batchSize
         self.numBatches = math.ceil(len(self.src)/batchSize)
         self.volatile = volatile
