@@ -36,6 +36,9 @@ class GlobalAttention(nn.Module):
     def applyMask(self, mask):
         self.mask = mask
 
+    def clearMask(self):
+        self.mask = None
+
     def forward(self, input, context):
         """
         input: batch x dim
@@ -44,7 +47,13 @@ class GlobalAttention(nn.Module):
         targetT = self.linear_in(input).unsqueeze(2)  # batch x dim x 1
 
         # Get attention
-        attn = torch.bmm(context, targetT).squeeze(2)  # batch x sourceL
+        attn = torch.bmm(context, targetT).squeeze(2)  # batch x sourceL x 1 => batch x sourceL
+
+        # Logging
+        # if self.mask is not None:
+        #     print 'mask.size:', type(self.mask), self.mask.size(), self.mask
+        #     print 'attn.data.size', attn.data.size()
+
         if self.mask is not None:
             attn.data.masked_fill_(self.mask, -float('inf'))
         attn = self.sm(attn)

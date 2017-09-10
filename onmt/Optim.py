@@ -20,7 +20,7 @@ class Optim(object):
 
     def __init__(self, method, lr, max_grad_norm, lr_decay=1, start_decay_at=None, upper_bad_count=0):
         self.last_ppl = None
-        self.last_bleu = None
+        self.last_bleu = 0
         self.lr = lr
         self.max_grad_norm = max_grad_norm
         self.method = method
@@ -28,6 +28,7 @@ class Optim(object):
         self.start_decay_at = start_decay_at
         self.start_decay = False
         self.upper_bad_count = upper_bad_count
+        self.bad_count = 0
 
     def step(self):
         # Compute gradients norm.
@@ -36,7 +37,7 @@ class Optim(object):
         self.optimizer.step()
 
     # decay learning rate if val perf does not improve or we hit the start_decay_at limit
-    def updateLearningRate(self, ppl, bleu, epoch):
+    def updateLearningRate(self, bleu, epoch):
         save_checkpoint = False
         if self.start_decay_at is not None and epoch >= self.start_decay_at:
             # self.start_decay = True
@@ -45,16 +46,17 @@ class Optim(object):
             if self.last_bleu is not None and bleu <= self.last_bleu:
                 self.bad_count += 1
                 if self.bad_count == self.upper_bad_count:
-                    self.start_decay = True
+                    # self.start_decay = 
+                    self.lr = self.lr * self.lr_decay
                     self.bad_count = 0
             else:
                 save_checkpoint = True
 
-        if self.start_decay:
-            self.lr = self.lr * self.lr_decay
-            print("Decaying learning rate to %g" % self.lr)
+        # if self.start_decay:
+        #     self.lr = self.lr * self.lr_decay
+        #     print("Decaying learning rate to %g" % self.lr)
 
-        self.last_ppl = ppl
+        # self.last_ppl = ppl
         if bleu > self.last_bleu:
             self.last_bleu = bleu
         self.optimizer.param_groups[0]['lr'] = self.lr

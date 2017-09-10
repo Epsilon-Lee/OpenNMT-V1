@@ -113,6 +113,7 @@ class Decoder(nn.Module):
             # context_t = torch.transpose(context, 0, 1)
             # print 'context_t.size', context_t.size(), type(context_t)
             # output, att = self.attn(output. context_t)
+            # print 'context.size', context.size()
             output, attn = self.attn(output, torch.transpose(context, 0, 1))
             output = self.dropout(output)
             outputs += [output]

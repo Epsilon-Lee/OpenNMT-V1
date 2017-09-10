@@ -38,6 +38,9 @@ python train.py -data IWSLT/de2en.30k.train.pt -save_model ../Models/V1_IWSLT_Mo
 
 # with bleu eval
 python train.py -data IWSLT/de2en.30k.train.pt -save_model ../Models/V1_IWSLT_Models/de2en_30k_bz32_bleuEval  -devSrcPath IWSLT/dev.de.tok -devTgtPath IWSLT/dev.en.tok -gpus 0 -batch_size 32
+
+## debug
+python train.py -data IWSLT/de2en.30k.train.pt -save_model ../Models/V1_IWSLT_Models/de2en_30k_bz32_bleuEval  -devSrcPath IWSLT/test.de.small.tok -devTgtPath IWSLT/dev.en.tok -gpus 0 -batch_size 32
 ```
 
 ### 3) Translate sentences.

@@ -87,15 +87,24 @@ def bleuEval(model, opt, devSrcPath, devTgtPath, dataset):
     print 'in bleuEval function...'
     translator = onmt.Translator(opt, model, dataset['dicts']['src'], dataset['dicts']['tgt'])
     srcData, references = fetch_data(devSrcPath, devTgtPath)
+    print 'len references', len(references)
     srcBatch, tgtBatch, candidate = [], [], []
 
     # translate srcData
     start = time.time()
+    lenSrcData = len(srcData)
     for i, line in enumerate(srcData):
+
+        # Progress bar
+        sys.stdout.write('\r')
+        # sys.stdout.write("[%s>%s] %s" % ('-'*i, ' '*(lenSrcData - i - 1), str(i * 100 / lenSrcData) + "%"))
+        sys.stdout.write("%s" % str(i * 100 / lenSrcData) + '%')
+        sys.stdout.flush()
+
         # Logging
         # if i % 30 == 0:
         #     print 'line', i
-        print 'line', i
+        # print 'line', i
         if line is not None:
             srcTokens = line.split()
             srcBatch += [srcTokens]
@@ -104,18 +113,24 @@ def bleuEval(model, opt, devSrcPath, devTgtPath, dataset):
         else:
             if len(srcBatch) == 0:
                 break
+        # print '-------- i=%d --------' % i
         start = time.time()
         predBatch, _ , _ = translator.translate(srcBatch, tgtBatch)
-        print 'predBatch finished:', time.time() - start, 'len predBatch', len(predBatch)
+        # print 'predBatch finished:', time.time() - start, 'len predBatch', len(predBatch)
+        # print '----------------------'
+        # print ''
+        # sys.stdin.readline()
 
         for b in range(len(predBatch)):
             candidate += [" ".join(predBatch[b][0]) + '\n']
-            print 'len candidate', len(candidate)
+            # print 'len candidate', len(candidate)
+
 
         srcBatch = []
         start = time.time()
     # Logging
-    sys.stdin.readline()
+    # sys.stdin.readline()
+    # print 'len candidate', len(candidate), 'len references', len(references)
 
     bleu, precisions, bp = BLEU(candidate, references)
     # Log information
@@ -186,13 +201,15 @@ def trainModel(model, trainData, validData, dataset, optim):
                 # start = time.time()
 
             # Validation
-            # if (i + 1) % opt.valid_interval == 0:
-            if i % opt.valid_interval == 0:
-                print 'In validatio mode:'
+            if (i + 1) % opt.valid_interval == 0 and epoch >= opt.start_decay_at:
+            # if i % opt.valid_interval == 0:
+                print 'In validatio mode...'
                 bleu = bleuEval(model, opt, opt.devSrcPath, opt.devTgtPath, dataset)
+                # If not, will bring bug
+                model.decoder.attn.clearMask()
                 save_checkpoint = optim.updateLearningRate(bleu, epoch)
                 if save_checkpoint:
-                    print 'Saving checkpoint...',
+                    print 'Saving checkpoint... Bad count:', optim.bad_count
                     model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
                     model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
                     generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
@@ -205,9 +222,12 @@ def trainModel(model, trainData, validData, dataset, optim):
                         'epoch': epoch,
                         'optim': optim
                     }
-                    torch.save(checkpoint,
-                               '%s_acc_%.2f_ppl_%.2f_e%d.pt' % (opt.save_model, 100*valid_acc, valid_ppl, epoch))
+                    # torch.save(checkpoint,
+                    #            '%s_acc_%.2f_ppl_%.2f_e%d.pt' % (opt.save_model, 100*valid_acc, valid_ppl, epoch))
+                    torch.save(checkpoint, '%s_bleu_%.2f_e%d.pt' % (opt.save_model, 100*bleu, epoch))
                     print 'Done'
+                else:
+                    print 'Not saving checkpoint... Bad count:', optim.bad_count
 
         return total_loss / total_words, total_num_correct / total_words
 
@@ -220,6 +240,7 @@ def trainModel(model, trainData, validData, dataset, optim):
         train_ppl = math.exp(min(train_loss, 100))
         print('Train perplexity: %g' % train_ppl)
         print('Train accuracy: %g' % (train_acc*100))
+        print('Learning rate: %f' % optim.lr)
 
         # #  (2) evaluate on the validation set
         # valid_loss, valid_acc = eval(model, criterion, validData)

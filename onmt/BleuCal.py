@@ -10,8 +10,12 @@ def fetch_data(cand, ref):
     """ Store each reference and candidate sentences as a list """
     references = []
     if '.txt' or '.tok' in ref:
+        # print 'in fetch_data'
         reference_file = codecs.open(ref, 'r', 'utf-8')
-        references.append(reference_file.readlines())
+        lines = reference_file.readlines()
+        # print lines[0], lines[1]
+        references.append(lines)
+        # print 'len', len(references)
     else:
         for root, dirs, files in os.walk(ref):
             for f in files:
@@ -27,6 +31,9 @@ def count_ngram(candidate, references, n):
     count = 0
     r = 0
     c = 0
+    # Logging
+    # print "candidate len:", len(candidate)
+    # print "reference len:", len(references[0])
     for si in range(len(candidate)):
         # Calculate precision for each sentence
         ref_counts = []

@@ -43,7 +43,7 @@ def model_opts(parser):
 
 	## Optimization options
 
-	parser.add_argument('-batch_size', type=int, default=32,
+	parser.add_argument('-batch_size', type=int, default=64,
 	                    help='Maximum batch size')
 	parser.add_argument('-max_generator_batches', type=int, default=32,
 	                    help="""Maximum batches of words in a sequence to run
@@ -81,7 +81,7 @@ def model_opts(parser):
 	                    this much if (i) perplexity does not decrease on the
 	                    validation set or (ii) epoch has gone past
 	                    start_decay_at""")
-	parser.add_argument('-start_decay_at', type=int, default=8,
+	parser.add_argument('-start_decay_at', type=int, default=1,
 	                    help="""Start decaying every epoch after and including this
 	                    epoch""")
 	parser.add_argument('-upper_bad_count', type=int, default=5,

@@ -2,7 +2,7 @@ import onmt
 import torch.nn as nn
 import torch
 from torch.autograd import Variable
-
+import time
 
 class Translator(object):
     def __init__(self, opt, model, srcDict, tgtDict):
@@ -198,20 +198,35 @@ class Translator(object):
         return allHyp, allScores, allAttn, goldScores
 
     def translate(self, srcBatch, goldBatch):
+        '''
+        buildData time cost: 0.000397920608521
+        translateBatch time cost: 2.8474919796
+        sorting time cost: 0.000258922576904
+        batchIndx to str time cost: 0.000917196273804
+        predBatch finished: 2.8491768837 len predBatch 30
+        '''
+
         #  (1) convert words to indexes
+        start = time.time()
         dataset = self.buildData(srcBatch, goldBatch)
         src, tgt, indices = dataset[0]
+        # print 'buildData time cost:', time.time() - start
 
         #  (2) translate
+        start = time.time()
         pred, predScore, attn, goldScore = self.translateBatch(src, tgt)
+        # print 'translateBatch time cost:', time.time() - start
+        start = time.time()
         pred, predScore, attn, goldScore = list(zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
+        # print 'sorting time cost:', time.time() - start
 
         #  (3) convert indexes to words
+        start = time.time()
         predBatch = []
         for b in range(src[0].size(1)):
             predBatch.append(
                 [self.buildTargetTokens(pred[b][n], srcBatch[b], attn[b][n])
                         for n in range(self.opt.n_best)]
             )
-
+        # print 'batchIndx to str time cost:', time.time() - start
         return predBatch, predScore, goldScore
