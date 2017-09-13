@@ -37,7 +37,7 @@ python preprocess.py -train_src IWSLT/train.de.tok -train_tgt IWSLT/train.en.tok
 python train.py -data IWSLT/de2en.30k.train.pt -save_model ../Models/V1_IWSLT_Models/de2en_30k_bz32_bleuEval -gpus 0 -batch_size 32
 
 # with bleu eval
-python train.py -data IWSLT/de2en.30k.train.pt -save_model ../Models/V1_IWSLT_Models/de2en_30k_bz32_bleuEval  -devSrcPath IWSLT/dev.de.tok -devTgtPath IWSLT/dev.en.tok -gpus 0 -batch_size 32
+python train.py -data IWSLT/de2en.30k.train.pt -save_model ../Models/V1_IWSLT_Models/de2en_30k_bz64_bc3  -devSrcPath IWSLT/dev.de.tok -devTgtPath IWSLT/dev.en.tok -gpus 0 -batch_size 64
 
 ## debug
 python train.py -data IWSLT/de2en.30k.train.pt -save_model ../Models/V1_IWSLT_Models/de2en_30k_bz32_bleuEval  -devSrcPath IWSLT/test.de.small.tok -devTgtPath IWSLT/dev.en.tok -gpus 0 -batch_size 32
@@ -46,7 +46,7 @@ python train.py -data IWSLT/de2en.30k.train.pt -save_model ../Models/V1_IWSLT_Mo
 ### 3) Translate sentences.
 
 ```bash
-python translate.py -gpu 0 -model ../Models/V1_IWSLT_Models/de2en_30k_bz32_acc_61.94_ppl_8.19_e13.pt -src IWSLT/test.de.tok -tgt IWSLT/test.en.tok -replace_unk -verbose -output iwslt_pred/de2en_bz64_50k_pred.txt
+python translate.py -gpu 3 -model ../Models/V1_IWSLT_Models/de2en_30k_bz32_bc2_bleu_25.93_e13.pt -src IWSLT/test.de.tok -tgt IWSLT/test.en.tok -replace_unk -verbose -output iwslt_pred/de2en_bc2_pred.txt
 ```
 
 ### 4) Evaluate.

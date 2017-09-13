@@ -49,7 +49,7 @@ def model_opts(parser):
 	                    help="""Maximum batches of words in a sequence to run
 	                    the generator on in parallel. Higher is faster, but uses
 	                    more memory.""")
-	parser.add_argument('-epochs', type=int, default=13,
+	parser.add_argument('-epochs', type=int, default=30,
 	                    help='Number of training epochs')
 	parser.add_argument('-start_epoch', type=int, default=1,
 	                    help='The epoch from which to start')
@@ -81,7 +81,7 @@ def model_opts(parser):
 	                    this much if (i) perplexity does not decrease on the
 	                    validation set or (ii) epoch has gone past
 	                    start_decay_at""")
-	parser.add_argument('-start_decay_at', type=int, default=1,
+	parser.add_argument('-start_decay_at', type=int, default=8,
 	                    help="""Start decaying every epoch after and including this
 	                    epoch""")
 	parser.add_argument('-upper_bad_count', type=int, default=5,

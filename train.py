@@ -203,13 +203,14 @@ def trainModel(model, trainData, validData, dataset, optim):
             # Validation
             if (i + 1) % opt.valid_interval == 0 and epoch >= opt.start_decay_at:
             # if i % opt.valid_interval == 0:
-                print 'In validatio mode...'
+                print 'In validation mode...'
+                model.eval()
                 bleu = bleuEval(model, opt, opt.devSrcPath, opt.devTgtPath, dataset)
                 # If not, will bring bug
                 model.decoder.attn.clearMask()
                 save_checkpoint = optim.updateLearningRate(bleu, epoch)
                 if save_checkpoint:
-                    print 'Saving checkpoint... Bad count:', optim.bad_count
+                    print 'Saving checkpoint... Bad count:', optim.bad_count, 'Learning rate:', optim.lr
                     model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
                     model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
                     generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
@@ -227,7 +228,8 @@ def trainModel(model, trainData, validData, dataset, optim):
                     torch.save(checkpoint, '%s_bleu_%.2f_e%d.pt' % (opt.save_model, 100*bleu, epoch))
                     print 'Done'
                 else:
-                    print 'Not saving checkpoint... Bad count:', optim.bad_count
+                    print 'Not saving checkpoint... Bad count:', optim.bad_count, 'Learning rate:', optim.lr
+                model.train()
 
         return total_loss / total_words, total_num_correct / total_words
 
@@ -241,6 +243,27 @@ def trainModel(model, trainData, validData, dataset, optim):
         print('Train perplexity: %g' % train_ppl)
         print('Train accuracy: %g' % (train_acc*100))
         print('Learning rate: %f' % optim.lr)
+
+        # print 'In validation mode...'
+        # model.eval()
+        # bleu = bleuEval(model, opt, opt.devSrcPath, opt.devTgtPath, dataset)
+        # model.decoder.attn.clearMask()
+        # optim.updateLearningRate(bleu, epoch)
+        # print 'Saving checkpoint... Bad count:', optim.bad_count
+        # model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
+        # model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
+        # generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
+        # #  (4) drop a checkpoint
+        # checkpoint = {
+        #     'model': model_state_dict,
+        #     'generator': generator_state_dict,
+        #     'dicts': dataset['dicts'],
+        #     'opt': opt,
+        #     'epoch': epoch,
+        #     'optim': optim
+        # }
+        # torch.save(checkpoint, '%s_bleu_%.2f_e%d.pt' % (opt.save_model, 100*bleu, epoch))
+        # print 'Done'
 
         # #  (2) evaluate on the validation set
         # valid_loss, valid_acc = eval(model, criterion, validData)
