@@ -100,6 +100,9 @@ def bleuEval(model, opt, devSrcPath, devTgtPath, dataset):
         sys.stdout.write("%s" % str(i * 100 / lenSrcData) + '%')
         sys.stdout.flush()
 
+        srcTokens = line.split()
+        srcBatch += [srcTokens]
+
         if (i + 1) % opt.trans_batch_size == 0:
             predBatch, _, _ = translator.translate(srcBatch, tgtBatch)
             for b in range(len(predBatch)):
