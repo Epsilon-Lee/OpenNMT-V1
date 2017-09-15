@@ -74,7 +74,8 @@ class Translator(object):
     def translateBatch(self, srcBatch, tgtBatch):
         batchSize = srcBatch[0].size(1)
         beamSize = self.opt.beam_size
-
+        # Logging
+        # print 'device is:', srcBatch[0].get_device()
         #  (1) run the encoder on the src
         encStates, context = self.model.encoder(srcBatch)
         srcBatch = srcBatch[0] # drop the lengths needed for encoder
@@ -209,7 +210,9 @@ class Translator(object):
         #  (1) convert words to indexes
         start = time.time()
         dataset = self.buildData(srcBatch, goldBatch)
+        # print 'in translate method:', type(dataset), dataset.src
         src, tgt, indices = dataset[0]
+        # src[0].cuda()
         # print 'buildData time cost:', time.time() - start
 
         #  (2) translate

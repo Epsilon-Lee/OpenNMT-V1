@@ -97,41 +97,22 @@ def bleuEval(model, opt, devSrcPath, devTgtPath, dataset):
 
         # Progress bar
         sys.stdout.write('\r')
-        # sys.stdout.write("[%s>%s] %s" % ('-'*i, ' '*(lenSrcData - i - 1), str(i * 100 / lenSrcData) + "%"))
         sys.stdout.write("%s" % str(i * 100 / lenSrcData) + '%')
         sys.stdout.flush()
 
-        # Logging
-        # if i % 30 == 0:
-        #     print 'line', i
-        # print 'line', i
-        if line is not None:
-            srcTokens = line.split()
-            srcBatch += [srcTokens]
-            if len(srcBatch) < opt.trans_batch_size:
-                continue
+        if (i + 1) % opt.trans_batch_size == 0:
+            predBatch, _, _ = translator.translate(srcBatch, tgtBatch)
+            for b in range(len(predBatch)):
+                candidate += [" ".join(predBatch[b][0]) + '\n']
+            srcBatch = []
+        elif (i + 1) == lenSrcData:
+            predBatch, _, _ = translator.translate(srcBatch, tgtBatch)
+            for b in range(len(predBatch)):
+                candidate += [" ".join(predBatch[b][0]) + '\n']
+            srcBatch = []
         else:
-            if len(srcBatch) == 0:
-                break
-        # print '-------- i=%d --------' % i
-        start = time.time()
-        predBatch, _ , _ = translator.translate(srcBatch, tgtBatch)
-        # print 'predBatch finished:', time.time() - start, 'len predBatch', len(predBatch)
-        # print '----------------------'
-        # print ''
-        # sys.stdin.readline()
-
-        for b in range(len(predBatch)):
-            candidate += [" ".join(predBatch[b][0]) + '\n']
-            # print 'len candidate', len(candidate)
-
-
-        srcBatch = []
-        start = time.time()
-    # Logging
-    # sys.stdin.readline()
-    # print 'len candidate', len(candidate), 'len references', len(references)
-
+            continue
+        
     bleu, precisions, bp = BLEU(candidate, references)
     # Log information
     print str('BLEU: %.2f' % (bleu*100)) + ',', 'precisions:',

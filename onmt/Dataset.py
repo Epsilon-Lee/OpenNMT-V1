@@ -26,7 +26,9 @@ class Dataset(object):
     def _batchify(self, data, align_right=False, include_lengths=False):
         lengths = [x.size(0) for x in data]
         max_length = max(lengths)
-        out = data[0].new(len(data), max_length).fill_(onmt.Constants.PAD)
+        # type(data[0]) is `torch,LongTensor`; self.new: constructs a new tensor of the same type
+        out = data[0].new(len(data), max_length).fill_(onmt.Constants.PAD) 
+        # print type(data), type(data[0])
         for i in range(len(data)):
             data_length = data[i].size(0)
             offset = max_length - data_length if align_right else 0
@@ -39,6 +41,7 @@ class Dataset(object):
 
     def __getitem__(self, index):
         assert index < self.numBatches, "%d > %d" % (index, self.numBatches)
+        # srcBatch: batch_size x seq_len
         srcBatch, lengths = self._batchify(
             self.src[index*self.batchSize:(index+1)*self.batchSize],
             align_right=False, include_lengths=True)
@@ -61,7 +64,7 @@ class Dataset(object):
         def wrap(b):
             if b is None:
                 return b
-            b = torch.stack(b, 0).t().contiguous()
+            b = torch.stack(b, 0).t().contiguous() # transpose to: seq_len x batch_size
             if self.cuda:
                 b = b.cuda()
             b = Variable(b, volatile=self.volatile)
@@ -75,7 +78,6 @@ class Dataset(object):
 
     def __len__(self):
         return self.numBatches
-
 
     def shuffle(self):
         data = list(zip(self.src, self.tgt))
