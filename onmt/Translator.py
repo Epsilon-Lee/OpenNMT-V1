@@ -54,8 +54,8 @@ class Translator(object):
         self.model = model
         self.model.eval()
 
-        print("readline:")
-        sys.stdin.readline()
+        # print("readline:")
+        # sys.stdin.readline()
 
     def buildData(self, srcBatch, goldBatch):
         srcData = [self.src_dict.convertToIdx(b,
