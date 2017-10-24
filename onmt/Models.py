@@ -39,7 +39,7 @@ class Encoder(nn.Module):
             outputs = unpack(outputs)[0]
         return hidden_t, outputs
 
-
+# Used by decoder: LSTMCell, which is useful for 1-step decoding
 class StackedLSTM(nn.Module):
     def __init__(self, num_layers, input_size, rnn_size, dropout):
         super(StackedLSTM, self).__init__()
@@ -54,21 +54,21 @@ class StackedLSTM(nn.Module):
             input_size = rnn_size
 
     def forward(self, input, hidden):
+        # hidden consists of: two (nL x bz x hz)-shape tensors
         h_0, c_0 = hidden
-        h_1, c_1 = [], []
+        h_1, c_1 = [], [] # '1' means time step one
         for i, layer in enumerate(self.layers):
             h_1_i, c_1_i = layer(input, (h_0[i], c_0[i]))
-            input = h_1_i
+            input = h_1_i # last layer's hidden output
             if i + 1 != self.num_layers:
-                input = self.dropout(input)
+                input = self.dropout(input) # dropout between layers
             h_1 += [h_1_i]
             c_1 += [c_1_i]
 
         h_1 = torch.stack(h_1)
         c_1 = torch.stack(c_1)
 
-        return input, (h_1, c_1)
-
+        return input, (h_1, c_1) # input is the last layer's hidden output
 
 class Decoder(nn.Module):
 
@@ -95,31 +95,25 @@ class Decoder(nn.Module):
             self.word_lut.weight.data.copy_(pretrained)
 
     def forward(self, input, hidden, context, init_output):
-        emb = self.word_lut(input)
+        emb = self.word_lut(input) # seqLen x bz x emb
 
         # n.b. you can increase performance if you compute W_ih * x for all
         # iterations in parallel, but that's only possible if
-        # self.input_feed=False
         outputs = []
         output = init_output
-        for emb_t in emb.split(1):
+        for emb_t in emb.split(1): # emb_t: (1, bz, emb)
             emb_t = emb_t.squeeze(0)
-            if self.input_feed:
-                emb_t = torch.cat([emb_t, output], 1)
+            if self.input_feed: # default value is: True
+                # STRANGE! Every timestep, the final output from encoder is concated with emb_t
+                emb_t = torch.cat([emb_t, output], 1) 
 
             output, hidden = self.rnn(emb_t, hidden)
-            # output, attn = self.attn(output, context.t())
-            # print 'context.size:', context.size()
-            # context_t = torch.transpose(context, 0, 1)
-            # print 'context_t.size', context_t.size(), type(context_t)
-            # output, att = self.attn(output. context_t)
-            # print 'context.size', context.size()
             output, attn = self.attn(output, torch.transpose(context, 0, 1))
             output = self.dropout(output)
             outputs += [output]
 
         outputs = torch.stack(outputs)
-        return outputs, hidden, attn
+        return outputs, hidden, attn # hidden and attn is the value of last time step
 
 
 class NMTModel(nn.Module):
@@ -155,4 +149,4 @@ class NMTModel(nn.Module):
 
         out, dec_hidden, _attn = self.decoder(tgt, enc_hidden, context, init_output)
 
-        return out
+        return out # seqLen x bz x hz

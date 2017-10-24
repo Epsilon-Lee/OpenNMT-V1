@@ -46,7 +46,8 @@ class GlobalAttention(nn.Module):
         """
         targetT = self.linear_in(input).unsqueeze(2)  # batch x dim x 1
 
-        # Get attention
+        # Get attention: inner product, essentially bilinear attention
+        # attn is un-normalized
         attn = torch.bmm(context, targetT).squeeze(2)  # batch x sourceL x 1 => batch x sourceL
 
         # Logging
@@ -56,11 +57,11 @@ class GlobalAttention(nn.Module):
 
         if self.mask is not None:
             attn.data.masked_fill_(self.mask, -float('inf'))
-        attn = self.sm(attn)
+        attn = self.sm(attn) # normalization: batch x sourceL
         attn3 = attn.view(attn.size(0), 1, attn.size(1))  # batch x 1 x sourceL
 
         weightedContext = torch.bmm(attn3, context).squeeze(1)  # batch x dim
-        contextCombined = torch.cat((weightedContext, input), 1)
+        contextCombined = torch.cat((weightedContext, input), 1) #  batch x 2dim (1000)
 
         contextOutput = self.tanh(self.linear_out(contextCombined))
 

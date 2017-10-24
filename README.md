@@ -46,7 +46,7 @@ python train.py -data IWSLT/de2en.30k.train.pt -save_model ../Models/V1_IWSLT_Mo
 ### 3) Translate sentences.
 
 ```bash
-python translate.py -gpu 3 -model ../Models/V1_IWSLT_Models/de2en_30k_bz32_bc2_bleu_25.93_e13.pt -src IWSLT/test.de.tok -tgt IWSLT/test.en.tok -replace_unk -verbose -output iwslt_pred/de2en_bc2_pred.txt
+python translate.py -gpu 3 -model ../Models/V1_IWSLT_Models/de2en_30k_bz64_bc3_bleu_26.11_e21.pt -src IWSLT/test.de.tok -tgt IWSLT/test.en.tok -replace_unk -verbose -output iwslt_pred/de2en_bc3_pred_Oct23.txt
 ```
 
 ### 4) Evaluate.
@@ -54,6 +54,8 @@ python translate.py -gpu 3 -model ../Models/V1_IWSLT_Models/de2en_30k_bz32_bc2_b
 ```bash
 perl multi-bleu.perl IWSLT/test.en.tok < iwslt_pred/de2en_30k_bz32_pred.txt
 ```
+
+
 
 ## LDC Chinese-English
 

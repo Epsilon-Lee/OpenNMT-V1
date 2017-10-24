@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch
 from torch.autograd import Variable
 import time
+import sys
 
 class Translator(object):
     def __init__(self, opt, model, srcDict, tgtDict):
@@ -25,6 +26,13 @@ class Translator(object):
                 nn.Linear(model_opt.rnn_size, self.tgt_dict.size()),
                 nn.LogSoftmax())
 
+            # Debugging:
+            model_state_dict = {k: v.cpu() for k, v in checkpoint['model'].items()}
+            generator_state_dict = {k: v.cpu() for k, v in checkpoint['generator'].items()}
+
+            # model.load_state_dict(model_state_dict)
+            # generator.load_state_dict(generator_state_dict)
+
             model.load_state_dict(checkpoint['model'])
             generator.load_state_dict(checkpoint['generator'])
 
@@ -46,6 +54,8 @@ class Translator(object):
         self.model = model
         self.model.eval()
 
+        print("readline:")
+        sys.stdin.readline()
 
     def buildData(self, srcBatch, goldBatch):
         srcData = [self.src_dict.convertToIdx(b,

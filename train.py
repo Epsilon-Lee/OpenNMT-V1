@@ -42,24 +42,24 @@ def memoryEfficientLoss(outputs, targets, generator, crit, eval=False):
     outputs = Variable(outputs.data, requires_grad=(not eval), volatile=eval)
 
     batch_size = outputs.size(1)
-    outputs_split = torch.split(outputs, opt.max_generator_batches)
-    targets_split = torch.split(targets, opt.max_generator_batches)
+    outputs_split = torch.split(outputs, opt.max_generator_batches) # seqLen x bz x hz
+    targets_split = torch.split(targets, opt.max_generator_batches) # seqLen x bz x vz
     for i, (out_t, targ_t) in enumerate(zip(outputs_split, targets_split)):
-        out_t = out_t.view(-1, out_t.size(2))
-        scores_t = generator(out_t)
+        out_t = out_t.view(-1, out_t.size(2)) # (seqLen x bz) x hz
+        scores_t = generator(out_t) # (seqLen x bz) x vz
         loss_t = crit(scores_t, targ_t.view(-1))
         pred_t = scores_t.max(1)[1] # which is the greedy predict under golden trajectory 
         num_correct_t = pred_t.data.eq(targ_t.data).masked_select(targ_t.ne(onmt.Constants.PAD).data).sum()
-        num_correct += num_correct_t
+        num_correct += num_correct_t 
         loss += loss_t.data[0]
         if not eval:
-            loss_t.div(batch_size).backward()
+            loss_t.div(batch_size).backward() # gradient will accumulate
 
     grad_output = None if outputs.grad is None else outputs.grad.data
     return loss, grad_output, num_correct
 
 # Validation stage after every epoch
-# Here, we consider two types of validation method, 1). Golden based 2). Search based
+# Here, we consider two types of validation methods, 1). Golden based 2). Search based
 ## 1). Golden based: means use golden target as input, but at every step do greedy predict
 def eval(model, criterion, data):
     total_loss = 0
@@ -83,11 +83,9 @@ def eval(model, criterion, data):
 ## 2). Search based: do beam search and calculate real bleu on dev data
 def bleuEval(model, opt, devSrcPath, devTgtPath, dataset):
     assert model is not None
-    # Logging
-    print 'in bleuEval function...'
+    
     translator = onmt.Translator(opt, model, dataset['dicts']['src'], dataset['dicts']['tgt'])
     srcData, references = fetch_data(devSrcPath, devTgtPath)
-    print 'len references', len(references)
     srcBatch, tgtBatch, candidate = [], [], []
 
     # translate srcData
@@ -97,7 +95,7 @@ def bleuEval(model, opt, devSrcPath, devTgtPath, dataset):
 
         # Progress bar
         sys.stdout.write('\r')
-        sys.stdout.write("%s" % str(i * 100 / lenSrcData) + '%')
+        sys.stdout.write("Bleu evaluation: %s" % str(i * 100 / lenSrcData) + '%')
         sys.stdout.flush()
 
         srcTokens = line.split()
@@ -122,6 +120,7 @@ def bleuEval(model, opt, devSrcPath, devTgtPath, dataset):
     for pr in precisions:
         print str('%.2f' % (pr*100)) + ',',
     print 'BP='+ str(bp)
+    print 'Candidate sentences:', len(candidate), 'ref sentences:', len(references[0])
 
     return bleu
 
@@ -196,8 +195,12 @@ def trainModel(model, trainData, validData, dataset, optim):
                 if save_checkpoint:
                     print 'Saving checkpoint... Bad count:', optim.bad_count, 'Learning rate:', optim.lr
                     model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
-                    model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
+                    model_state_dict = {k: v.cpu() for k, v in model_state_dict.items() if 'generator' not in k}
+                    # model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
                     generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
+                    generator_state_dict = {k: v.cpu() for k, v in generator_state_dict.items()}
+                    # Bug report:
+
                     #  (4) drop a checkpoint
                     checkpoint = {
                         'model': model_state_dict,
@@ -228,50 +231,6 @@ def trainModel(model, trainData, validData, dataset, optim):
         print('Train accuracy: %g' % (train_acc*100))
         print('Learning rate: %f' % optim.lr)
 
-        # print 'In validation mode...'
-        # model.eval()
-        # bleu = bleuEval(model, opt, opt.devSrcPath, opt.devTgtPath, dataset)
-        # model.decoder.attn.clearMask()
-        # optim.updateLearningRate(bleu, epoch)
-        # print 'Saving checkpoint... Bad count:', optim.bad_count
-        # model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
-        # model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
-        # generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
-        # #  (4) drop a checkpoint
-        # checkpoint = {
-        #     'model': model_state_dict,
-        #     'generator': generator_state_dict,
-        #     'dicts': dataset['dicts'],
-        #     'opt': opt,
-        #     'epoch': epoch,
-        #     'optim': optim
-        # }
-        # torch.save(checkpoint, '%s_bleu_%.2f_e%d.pt' % (opt.save_model, 100*bleu, epoch))
-        # print 'Done'
-
-        # #  (2) evaluate on the validation set
-        # valid_loss, valid_acc = eval(model, criterion, validData)
-        # valid_ppl = math.exp(min(valid_loss, 100))
-        # print('Validation perplexity: %g' % valid_ppl)
-        # print('Validation accuracy: %g' % (valid_acc*100))
-
-        #  (3) update the learning rate
-        # optim.updateLearningRate(valid_ppl, epoch)
-
-        # model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
-        # model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
-        # generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
-        # #  (4) drop a checkpoint
-        # checkpoint = {
-        #     'model': model_state_dict,
-        #     'generator': generator_state_dict,
-        #     'dicts': dataset['dicts'],
-        #     'opt': opt,
-        #     'epoch': epoch,
-        #     'optim': optim
-        # }
-        # torch.save(checkpoint,
-        #            '%s_acc_%.2f_ppl_%.2f_e%d.pt' % (opt.save_model, 100*valid_acc, valid_ppl, epoch))
 
 def main():
 

@@ -1,2 +1,2 @@
-iwslt_pred/
-.idea/
+iwslt_pred/**
+.idea/**

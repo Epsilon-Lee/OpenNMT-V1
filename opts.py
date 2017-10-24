@@ -81,10 +81,10 @@ def model_opts(parser):
 	                    this much if (i) perplexity does not decrease on the
 	                    validation set or (ii) epoch has gone past
 	                    start_decay_at""")
-	parser.add_argument('-start_decay_at', type=int, default=8,
+	parser.add_argument('-start_decay_at', type=int, default=1,
 	                    help="""Start decaying every epoch after and including this
 	                    epoch""")
-	parser.add_argument('-upper_bad_count', type=int, default=5,
+	parser.add_argument('-upper_bad_count', type=int, default=2,
 	                    help="""upper bad_count which will trigger learning rate decay""")
 	#pretrained word vectors
 
