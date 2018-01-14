@@ -2,7 +2,7 @@ import argparse
 
 def model_opts(parser):
 
-	parser.add_argument('-data', required=True,
+	parser.add_argument('-data', required=False, default='IWSLT/de2en.30k.train.pt',
                     help='Path to the *-train.pt file from preprocess.py')
 	parser.add_argument('-save_model', default='model',
 	                    help="""Model filename (the model will be saved as
@@ -72,7 +72,7 @@ def model_opts(parser):
 	                    shuffle and re-assign mini-batches""")
 
 	#learning rate
-	parser.add_argument('-learning_rate', type=float, default=1.0,
+	parser.add_argument('-learning_rate', type=float, default=1.,
 	                    help="""Starting learning rate. If adagrad/adadelta/adam is
 	                    used, then this is the global learning rate. Recommended
 	                    settings: sgd = 1, adagrad = 0.1, adadelta = 1, adam = 0.001""")
@@ -81,10 +81,10 @@ def model_opts(parser):
 	                    this much if (i) perplexity does not decrease on the
 	                    validation set or (ii) epoch has gone past
 	                    start_decay_at""")
-	parser.add_argument('-start_decay_at', type=int, default=8,
+	parser.add_argument('-start_decay_at', type=int, default=2,
 	                    help="""Start decaying every epoch after and including this
 	                    epoch""")
-	parser.add_argument('-upper_bad_count', type=int, default=3,
+	parser.add_argument('-upper_bad_count', type=int, default=1,
 	                    help="""upper bad_count which will trigger learning rate decay""")
 	#pretrained word vectors
 
@@ -98,7 +98,7 @@ def model_opts(parser):
 	                    See README for specific formatting instructions.""")
 
 	# GPU
-	parser.add_argument('-gpus', default=[], nargs='+', type=int,
+	parser.add_argument('-gpus', default=[3], nargs='+', type=int,
 	                    help="Use CUDA on the listed devices.")
 
 	parser.add_argument('-log_interval', type=int, default=50,
@@ -127,7 +127,7 @@ def translate_opts(parser):
 	                    be the decoded sequence""")
 	parser.add_argument('-beam_size',  type=int, default=5,
 	                    help='Beam size')
-	parser.add_argument('-trans_batch_size', type=int, default=30,
+	parser.add_argument('-trans_batch_size', type=int, default=64,
 	                    help='Batch size')
 	parser.add_argument('-max_sent_length', type=int, default=100,
 	                    help='Maximum sentence length.')

@@ -15,13 +15,18 @@ class Encoder(nn.Module):
         input_size = opt.word_vec_size
 
         super(Encoder, self).__init__()
-        self.word_lut = nn.Embedding(dicts.size(),
-                                  opt.word_vec_size,
-                                  padding_idx=onmt.Constants.PAD)
-        self.rnn = nn.LSTM(input_size, self.hidden_size,
-                        num_layers=opt.layers,
-                        dropout=opt.dropout,
-                        bidirectional=opt.brnn)
+        self.word_lut = nn.Embedding(
+            dicts.size(),
+            opt.word_vec_size,
+            padding_idx=onmt.Constants.PAD
+        )
+        self.rnn = nn.LSTM(
+            input_size,
+            self.hidden_size,
+            num_layers=opt.layers,
+            dropout=opt.dropout,
+            bidirectional=opt.brnn
+        )
 
     def load_pretrained_vectors(self, opt):
         if opt.pre_word_vecs_enc is not None:
@@ -38,6 +43,7 @@ class Encoder(nn.Module):
         if isinstance(input, tuple):
             outputs = unpack(outputs)[0]
         return hidden_t, outputs
+
 
 # Used by decoder: LSTMCell, which is useful for 1-step decoding
 class StackedLSTM(nn.Module):
@@ -70,6 +76,7 @@ class StackedLSTM(nn.Module):
 
         return input, (h_1, c_1) # input is the last layer's hidden output
 
+
 class Decoder(nn.Module):
 
     def __init__(self, opt, dicts):
@@ -80,10 +87,17 @@ class Decoder(nn.Module):
             input_size += opt.rnn_size
 
         super(Decoder, self).__init__()
-        self.word_lut = nn.Embedding(dicts.size(),
-                                  opt.word_vec_size,
-                                  padding_idx=onmt.Constants.PAD)
-        self.rnn = StackedLSTM(opt.layers, input_size, opt.rnn_size, opt.dropout)
+        self.word_lut = nn.Embedding(
+            dicts.size(),
+            opt.word_vec_size,
+            padding_idx=onmt.Constants.PAD
+        )
+        self.rnn = StackedLSTM(
+            opt.layers,
+            input_size,
+            opt.rnn_size,
+            opt.dropout
+        )
         self.attn = onmt.modules.GlobalAttention(opt.rnn_size)
         self.dropout = nn.Dropout(opt.dropout)
 

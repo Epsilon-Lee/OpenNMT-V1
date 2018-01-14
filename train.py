@@ -50,7 +50,7 @@ def memoryEfficientLoss(outputs, targets, generator, crit, eval=False):
         loss_t = crit(scores_t, targ_t.view(-1))
         pred_t = scores_t.max(1)[1] # which is the greedy predict under golden trajectory 
         num_correct_t = pred_t.data.eq(targ_t.data).masked_select(targ_t.ne(onmt.Constants.PAD).data).sum()
-        num_correct += num_correct_t 
+        num_correct += num_correct_t
         loss += loss_t.data[0]
         if not eval:
             loss_t.div(batch_size).backward() # gradient will accumulate
@@ -133,7 +133,8 @@ def trainModel(model, trainData, validData, dataset, optim):
     criterion = NMTCriterion(dataset['dicts']['tgt'].size())
 
     start_time = time.time()
-    def trainEpoch(epoch):
+    batch_idx = 0
+    def trainEpoch(epoch, batch_idx):
         # Logging
         print('In trainEpoch...')
         if opt.extra_shuffle and epoch > opt.curriculum:
@@ -148,6 +149,7 @@ def trainModel(model, trainData, validData, dataset, optim):
         for i in range(len(trainData)):
             # Logging
             # print 'i=', i
+            batch_idx += 1
             batchIdx = batchOrder[i] if epoch > opt.curriculum else i
             batch = trainData[batchIdx][:-1] # exclude original indices
 
@@ -172,13 +174,13 @@ def trainModel(model, trainData, validData, dataset, optim):
             total_words += num_words
             # Log information
             if i % opt.log_interval == -1 % opt.log_interval:
-                print("Epoch %2d, %5d/%5d; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s; %6.0f s elapsed" %
+                print("Epoch %2d, %5d/%5d; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s; %6.0f s elapsed  batch_idx %d" %
                       (epoch, i+1, len(trainData),
                       report_num_correct / report_tgt_words * 100,
-                      math.exp(report_loss / report_tgt_words),
-                      report_src_words/(time.time()-start),
-                      report_tgt_words/(time.time()-start),
-                      time.time()-start_time))
+                      math.exp(min(report_loss / report_tgt_words, 25)),
+                      report_src_words/(time.time() - start),
+                      report_tgt_words/(time.time() - start),
+                      time.time() - start_time, batch_idx))
 
                 report_loss = report_tgt_words = report_src_words = report_num_correct = 0
                 # start = time.time()
@@ -192,40 +194,41 @@ def trainModel(model, trainData, validData, dataset, optim):
                 # If not, will bring bug
                 model.decoder.attn.clearMask()
                 save_checkpoint = optim.updateLearningRate(bleu, epoch)
-                if save_checkpoint:
-                    print 'Saving checkpoint... Bad count:', optim.bad_count, 'Learning rate:', optim.lr
-                    model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
-                    model_state_dict = {k: v.cpu() for k, v in model_state_dict.items() if 'generator' not in k}
-                    # model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
-                    generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
-                    generator_state_dict = {k: v.cpu() for k, v in generator_state_dict.items()}
-                    # Bug report:
+                # if save_checkpoint:
+                #     print 'Saving checkpoint... Bad count:', optim.bad_count, 'Learning rate:', optim.lr
+                #     model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
+                #     model_state_dict = {k: v.cpu() for k, v in model_state_dict.items() if 'generator' not in k}
+                #     # model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
+                #     generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
+                #     generator_state_dict = {k: v.cpu() for k, v in generator_state_dict.items()}
+                #     # Bug report:
 
-                    #  (4) drop a checkpoint
-                    checkpoint = {
-                        'model': model_state_dict,
-                        'generator': generator_state_dict,
-                        'dicts': dataset['dicts'],
-                        'opt': opt,
-                        'epoch': epoch,
-                        'optim': optim
-                    }
-                    # torch.save(checkpoint,
-                    #            '%s_acc_%.2f_ppl_%.2f_e%d.pt' % (opt.save_model, 100*valid_acc, valid_ppl, epoch))
-                    torch.save(checkpoint, '%s_bleu_%.2f_e%d.pt' % (opt.save_model, 100*bleu, epoch))
-                    print 'Done'
-                else:
-                    print 'Not saving checkpoint... Bad count:', optim.bad_count, 'Learning rate:', optim.lr
+                #     #  (4) drop a checkpoint
+                #     checkpoint = {
+                #         'model': model_state_dict,
+                #         'generator': generator_state_dict,
+                #         'dicts': dataset['dicts'],
+                #         'opt': opt,
+                #         'epoch': epoch,
+                #         'optim': optim
+                #     }
+                #     # torch.save(checkpoint,
+                #     #            '%s_acc_%.2f_ppl_%.2f_e%d.pt' % (opt.save_model, 100*valid_acc, valid_ppl, epoch))
+                #     torch.save(checkpoint, '%s_bleu_%.2f_e%d.pt' % (opt.save_model, 100*bleu, epoch))
+                #     print 'Done'
+                # else:
+                #     print 'Not saving checkpoint... Bad count:', optim.bad_count, 'Learning rate:', optim.lr
                 model.train()
 
         return total_loss / total_words, total_num_correct / total_words
 
     print('Start training...')
+    
     for epoch in range(opt.start_epoch, opt.epochs + 1):
         print('')
 
         #  (1) train for one epoch on the training set
-        train_loss, train_acc = trainEpoch(epoch)
+        train_loss, train_acc = trainEpoch(epoch, batch_idx)
         train_ppl = math.exp(min(train_loss, 100))
         print('Train perplexity: %g' % train_ppl)
         print('Train accuracy: %g' % (train_acc*100))
@@ -309,7 +312,9 @@ def main():
         decoder.load_pretrained_vectors(opt)
 
         optim = onmt.Optim(
-            opt.optim, opt.learning_rate, opt.max_grad_norm,
+            opt.optim,
+            opt.learning_rate,
+            opt.max_grad_norm,
             lr_decay=opt.learning_rate_decay,
             start_decay_at=opt.start_decay_at,
             upper_bad_count = opt.upper_bad_count
