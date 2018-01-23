@@ -5,6 +5,7 @@ import math
 import operator
 import json
 
+from functools import reduce
 
 def fetch_data(cand, ref):
     """ Store each reference and candidate sentences as a list """
@@ -122,13 +123,13 @@ def BLEU(candidate, references):
     bleu = geometric_mean(precisions) * bp
     return bleu, precisions, bp
 
-if __name__ == "__main__":
-    candidate, references = fetch_data(sys.argv[1], sys.argv[2])
-    bleu, precisions, bp = BLEU(candidate, references)
-    print str('BLEU: %.2f' % (bleu*100)) + ',', 'precisions:',
-    for pr in precisions:
-        print str('%.2f' % (pr*100)) + ',',
-    print 'BP='+ str(bp)
-    out = open('bleu_out.txt', 'w')
-    out.write(str(bleu))
-    out.close()
+# if __name__ == "__main__":
+    # candidate, references = fetch_data(sys.argv[1], sys.argv[2])
+    # bleu, precisions, bp = BLEU(candidate, references)
+    # print str('BLEU: %.2f' % (bleu*100)) + ',', 'precisions:',
+    # for pr in precisions:
+    #     print str('%.2f' % (pr*100)) + ',',
+    # print 'BP='+ str(bp)
+    # out = open('bleu_out.txt', 'w')
+    # out.write(str(bleu))
+    # out.close()

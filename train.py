@@ -116,11 +116,22 @@ def bleuEval(model, opt, devSrcPath, devTgtPath, dataset):
         
     bleu, precisions, bp = BLEU(candidate, references)
     # Log information
-    print str('BLEU: %.2f' % (bleu*100)) + ',', 'precisions:',
-    for pr in precisions:
-        print str('%.2f' % (pr*100)) + ',',
-    print 'BP='+ str(bp)
-    print 'Candidate sentences:', len(candidate), 'ref sentences:', len(references[0])
+    print('BLEU: %.2f precisions: %.2f, %.2f, %.2f, %.2f, BP=%f'
+          % (
+            bleu * 100,
+            precisions[0] * 100,
+            precisions[1] * 100,
+            precisions[2] * 100,
+            precisions[3] * 100,
+            bp
+          )
+    )
+    print('Candidate sentences: %d , reference sentences: %d' % (len(candidate), len(references[0])))
+    # print str('BLEU: %.2f' % (bleu*100)) + ',', 'precisions:',
+    # for pr in precisions:
+    #     print str('%.2f' % (pr*100)) + ',',
+    # print 'BP='+ str(bp)
+    # print 'Candidate sentences:', len(candidate), 'ref sentences:', len(references[0])
 
     return bleu
 
@@ -188,9 +199,11 @@ def trainModel(model, trainData, validData, dataset, optim):
             # Validation
             if (i + 1) % opt.valid_interval == 0 and epoch >= opt.start_decay_at:
             # if i % opt.valid_interval == 0:
-                print 'In validation mode...'
+                print('In validation mode...')
                 model.eval()
                 bleu = bleuEval(model, opt, opt.devSrcPath, opt.devTgtPath, dataset)
+                print('Test on test set...')
+                bleu_test = bleuEval(model, opt, opt.testSrcPath, opt.testTgtPath, dataset)
                 # If not, will bring bug
                 model.decoder.attn.clearMask()
                 save_checkpoint = optim.updateLearningRate(bleu, epoch)

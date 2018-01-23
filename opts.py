@@ -15,11 +15,16 @@ def model_opts(parser):
 	                    help="""If training from a checkpoint then this is the
 	                    path to the pretrained model.""")
 
-	parser.add_argument('-devSrcPath', default='', type=str,
+	parser.add_argument('-devSrcPath', default='IWSLT/dev.de.tok', type=str,
 	                    help="""Dev. source data path""")
-	parser.add_argument('-devTgtPath', default='', type=str,
+	parser.add_argument('-devTgtPath', default='IWSLT/dev.en.tok', type=str,
 	                    help="""Dev. target data path, might be a directory which
 	                    contains multiple reference files.""")
+	parser.add_argument('-testSrcPath', default='IWSLT/test.de.tok', type=str,
+						help="""Dev. source data path""")
+	parser.add_argument('-testTgtPath', default='IWSLT/test.en.tok', type=str,
+						help="""Dev. target data path, might be a directory which
+		                    contains multiple reference files.""")
 
 	## Model options
 
@@ -98,7 +103,7 @@ def model_opts(parser):
 	                    See README for specific formatting instructions.""")
 
 	# GPU
-	parser.add_argument('-gpus', default=[3], nargs='+', type=int,
+	parser.add_argument('-gpus', default=[0], nargs='+', type=int,
 	                    help="Use CUDA on the listed devices.")
 
 	parser.add_argument('-log_interval', type=int, default=50,
